@@ -22,23 +22,23 @@ import org.bukkit.entity.Player;
  */
 public class UUIDFetcher {
 	
-  /*
-  Uncomment this if you want the helper method for BungeeCord:
-  /**
+	/**
 	 * @param player The player
 	 * @return The UUID of the given player
 	 */
+	 //Uncomment this if you want the helper method for BungeeCord:
+	/*
 	public static UUID getUUID(ProxiedPlayer player) {
 		return getUUID(player.getName());
 	}
 	*/
 	
-  /*
-  Uncomment this if you want the helper method for Bukkit/Spigot:
-  /**
+	/**
 	 * @param player The player
 	 * @return The UUID of the given player
 	 */
+	 //Uncomment this if you want the helper method for Bukkit/Spigot:
+	/*
 	public static UUID getUUID(Player player) {
 		return getUUID(player.getName());
 	}
