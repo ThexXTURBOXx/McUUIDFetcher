@@ -1,4 +1,4 @@
-package your.package.here;
+//package your.package.here;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -22,6 +22,9 @@ import org.bukkit.entity.Player;
  */
 public final class UUIDFetcher {
 
+    private static final String UUID_URL = "https://api.mojang.com/users"
+            + "/profiles/minecraft/";
+
     private UUIDFetcher() {
         throw new UnsupportedOperationException();
     }
@@ -33,11 +36,11 @@ public final class UUIDFetcher {
      * @return The UUID of the given player.
      */
     //Uncomment this if you want the helper method for BungeeCord:
-	/*
-	public static UUID getUUID(ProxiedPlayer player) {
-		return getUUID(player.getName());
-	}
-	*/
+    /*
+    public static UUID getUUID(ProxiedPlayer player) {
+        return getUUID(player.getName());
+    }
+    */
 
     /**
      * Returns the UUID of the searched player.
@@ -46,11 +49,11 @@ public final class UUIDFetcher {
      * @return The UUID of the given player.
      */
     //Uncomment this if you want the helper method for Bukkit/Spigot:
-	/*
-	public static UUID getUUID(Player player) {
-		return getUUID(player.getName());
-	}
-	*/
+    /*
+    public static UUID getUUID(Player player) {
+        return getUUID(player.getName());
+    }
+    */
 
     /**
      * Returns the UUID of the searched player.
@@ -59,37 +62,34 @@ public final class UUIDFetcher {
      * @return The UUID of the given player.
      */
     public static UUID getUUID(String playername) {
-        String output = callURL("https://api.mojang.com/users/profiles"
-                + "/minecraft/" + playername);
+        String output = callURL(UUID_URL + playername);
         StringBuilder result = new StringBuilder();
         readData(output, result);
         String u = result.toString();
-        String uuid = "";
+        StringBuilder uuid = new StringBuilder();
         for (int i = 0; i <= 31; i++) {
-            uuid = uuid + u.charAt(i);
+            uuid.append(u.charAt(i));
             if (i == 7 || i == 11 || i == 15 || i == 19) {
-                uuid = uuid + "-";
+                uuid.append('-');
             }
         }
-        return UUID.fromString(uuid);
+        return UUID.fromString(uuid.toString());
     }
 
     private static void readData(String toRead, StringBuilder result) {
-        int i = 7;
-        while (i < 200) {
-            if (!String.valueOf(toRead.charAt(i)).equalsIgnoreCase("\"")) {
-                result.append(String.valueOf(toRead.charAt(i)));
+        for (int i = toRead.length() - 3; i >= 0; i--) {
+            if (toRead.charAt(i) != '"') {
+                result.insert(0, toRead.charAt(i));
             } else {
                 break;
             }
-            i++;
         }
     }
 
     private static String callURL(String urlStr) {
         StringBuilder sb = new StringBuilder();
-        URLConnection urlConn = null;
-        InputStreamReader in = null;
+        URLConnection urlConn;
+        InputStreamReader in;
         try {
             URL url = new URL(urlStr);
             urlConn = url.openConnection();
@@ -100,15 +100,13 @@ public final class UUIDFetcher {
                 in = new InputStreamReader(urlConn.getInputStream(),
                         Charset.defaultCharset());
                 BufferedReader bufferedReader = new BufferedReader(in);
-                if (bufferedReader != null) {
-                    int cp;
-                    while ((cp = bufferedReader.read()) != -1) {
-                        sb.append((char) cp);
-                    }
-                    bufferedReader.close();
+                int cp;
+                while ((cp = bufferedReader.read()) != -1) {
+                    sb.append((char) cp);
                 }
+                bufferedReader.close();
+                in.close();
             }
-            in.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

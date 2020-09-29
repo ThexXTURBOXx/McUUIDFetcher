@@ -1,4 +1,4 @@
-package your.package.here;
+//package your.package.here;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -11,6 +11,9 @@ import java.util.UUID;
  * Helper-class for getting names of players.
  */
 public final class NameFetcher {
+
+    private static final String NAME_URL = "https://sessionserver.mojang.com"
+            + "/session/minecraft/profile/";
 
     private NameFetcher() {
         throw new UnsupportedOperationException();
@@ -34,27 +37,22 @@ public final class NameFetcher {
      */
     public static String getName(String uuid) {
         uuid = uuid.replace("-", "");
-        String output = callURL("https://sessionserver.mojang.com/session/"
-                + "minecraft/profile/" + uuid);
+        String output = callURL(NAME_URL + uuid);
         StringBuilder result = new StringBuilder();
-        int i = 0;
-        while (i < 200) {
-            if ((output.charAt(i) + "").equalsIgnoreCase("n")
-                    && (output.charAt(i + 1) + "").equalsIgnoreCase("a")
-                    && (output.charAt(i + 2) + "").equalsIgnoreCase("m")
-                    && (output.charAt(i + 3) + "").equalsIgnoreCase("e")) {
-                int k = i + 7;
-                while (k < 100) {
-                    if (!(output.charAt(k) + "").equalsIgnoreCase("\"")) {
-                        result.append(output.charAt(k));
+        for (int i = 0; i < 20000; i++) {
+            if (output.charAt(i) == 'n' && output.charAt(i + 1) == 'a'
+                    && output.charAt(i + 2) == 'm'
+                    && output.charAt(i + 3) == 'e') {
+                for (int k = i + 9; k < 20000; k++) {
+                    char curr = output.charAt(k);
+                    if (curr != '"') {
+                        result.append(curr);
                     } else {
                         break;
                     }
-                    k++;
                 }
                 break;
             }
-            i++;
         }
         return result.toString();
     }
@@ -62,7 +60,7 @@ public final class NameFetcher {
     private static String callURL(String urlStr) {
         StringBuilder sb = new StringBuilder();
         URLConnection urlConn;
-        InputStreamReader in = null;
+        InputStreamReader in;
         try {
             URL url = new URL(urlStr);
             urlConn = url.openConnection();
@@ -78,8 +76,6 @@ public final class NameFetcher {
                     sb.append((char) cp);
                 }
                 bufferedReader.close();
-            }
-            if (in != null) {
                 in.close();
             }
         } catch (Exception e) {
