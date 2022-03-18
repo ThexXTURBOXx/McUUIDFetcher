@@ -63,22 +63,16 @@ public final class UUIDFetcher {
      */
     public static UUID getUUID(String playername) {
         String output = callURL(UUID_URL + playername);
-        StringBuilder result = new StringBuilder();
-        readData(output, result);
-        String u = result.toString();
         StringBuilder uuid = new StringBuilder();
-        for (int i = 0; i <= 31; i++) {
-            uuid.append(u.charAt(i));
-            if (i == 7 || i == 11 || i == 15 || i == 19) {
-                uuid.append('-');
-            }
-        }
+        readData(output, uuid);
         return UUID.fromString(uuid.toString());
     }
 
     private static void readData(String toRead, StringBuilder result) {
-        for (int i = toRead.length() - 3; i >= 0; i--) {
+        for (int i = toRead.length() - 3, j = 31; i >= 0; i--, j--) {
             if (toRead.charAt(i) != '"') {
+                if ((j == 19) || (j == 15) || (j == 11) || (j == 7))
+                    result.insert(0, '-');
                 result.insert(0, toRead.charAt(i));
             } else {
                 break;
