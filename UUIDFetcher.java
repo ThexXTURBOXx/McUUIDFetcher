@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /*
@@ -91,8 +91,7 @@ public final class UUIDFetcher {
                 urlConn.setReadTimeout(60 * 1000);
             }
             if (urlConn != null && urlConn.getInputStream() != null) {
-                in = new InputStreamReader(urlConn.getInputStream(),
-                        Charset.defaultCharset());
+                in = new InputStreamReader(urlConn.getInputStream(), StandardCharsets.UTF_8);
                 BufferedReader bufferedReader = new BufferedReader(in);
                 int cp;
                 while ((cp = bufferedReader.read()) != -1) {
