@@ -4,8 +4,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
 Uncomment this if you want the helper method for BungeeCord:
@@ -24,6 +25,8 @@ public final class UUIDFetcher {
 
     private static final String UUID_URL = "https://api.mojang.com/users"
             + "/profiles/minecraft/";
+
+    private static final Pattern UUID_PATTERN = Pattern.compile("\"id\"\\s*:\\s*\"(.*?)\"");
 
     private UUIDFetcher() {
         throw new UnsupportedOperationException();
@@ -58,50 +61,67 @@ public final class UUIDFetcher {
     /**
      * Returns the UUID of the searched player.
      *
-     * @param playername The name of the player.
+     * @param name The name of the player.
      * @return The UUID of the given player.
      */
-    public static UUID getUUID(String playername) {
-        String output = callURL(UUID_URL + playername);
-        StringBuilder uuid = new StringBuilder();
-        readData(output, uuid);
-        return UUID.fromString(uuid.toString());
+    public static UUID getUUID(String name) {
+        String output = callURL(UUID_URL + name);
+        Matcher m = UUID_PATTERN.matcher(output);
+        if (m.find()) {
+            return UUID.fromString(insertDashes(m.group(1)));
+        }
+        return null;
     }
 
-    private static void readData(String toRead, StringBuilder result) {
-        for (int i = toRead.length() - 3, j = 31; i >= 0; i--, j--) {
-            if (toRead.charAt(i) != '"') {
-                if ((j == 19) || (j == 15) || (j == 11) || (j == 7))
-                    result.insert(0, '-');
-                result.insert(0, toRead.charAt(i));
-            } else {
-                break;
-            }
-        }
+    /**
+     * Helper method for inserting dashes into
+     * unformatted UUID.
+     *
+     * @return Formatted UUID with dashes.
+     */
+    public static String insertDashes(String uuid) {
+        StringBuilder sb = new StringBuilder(uuid);
+        sb.insert(8, '-');
+        sb.insert(13, '-');
+        sb.insert(18, '-');
+        sb.insert(23, '-');
+        return sb.toString();
     }
 
     private static String callURL(String urlStr) {
         StringBuilder sb = new StringBuilder();
-        URLConnection urlConn;
-        InputStreamReader in;
+        URLConnection conn;
+        BufferedReader br = null;
+        InputStreamReader in = null;
         try {
-            URL url = new URL(urlStr);
-            urlConn = url.openConnection();
-            if (urlConn != null) {
-                urlConn.setReadTimeout(60 * 1000);
+            conn = new URL(urlStr).openConnection();
+            if (conn != null) {
+                conn.setReadTimeout(60 * 1000);
             }
-            if (urlConn != null && urlConn.getInputStream() != null) {
-                in = new InputStreamReader(urlConn.getInputStream(), StandardCharsets.UTF_8);
-                BufferedReader bufferedReader = new BufferedReader(in);
-                int cp;
-                while ((cp = bufferedReader.read()) != -1) {
-                    sb.append((char) cp);
+            if (conn != null && conn.getInputStream() != null) {
+                in = new InputStreamReader(conn.getInputStream(), "UTF-8");
+                br = new BufferedReader(in);
+                String line = br.readLine();
+                while (line != null) {
+                    sb.append(line).append("\n");
+                    line = br.readLine();
                 }
-                bufferedReader.close();
-                in.close();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (Throwable ignored) {
+                }
+            }
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (Throwable ignored) {
+                }
+            }
         }
         return sb.toString();
     }

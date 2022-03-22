@@ -4,8 +4,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Helper-class for getting names of players.
@@ -14,6 +15,8 @@ public final class NameFetcher {
 
     private static final String NAME_URL = "https://sessionserver.mojang.com"
             + "/session/minecraft/profile/";
+
+    private static final Pattern NAME_PATTERN = Pattern.compile(",\\s*\"name\"\\s*:\\s*\"(.*?)\"");
 
     private NameFetcher() {
         throw new UnsupportedOperationException();
@@ -38,47 +41,47 @@ public final class NameFetcher {
     public static String getName(String uuid) {
         uuid = uuid.replace("-", "");
         String output = callURL(NAME_URL + uuid);
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < 20000; i++) {
-            if (output.charAt(i) == 'n' && output.charAt(i + 1) == 'a'
-                    && output.charAt(i + 2) == 'm'
-                    && output.charAt(i + 3) == 'e') {
-                for (int k = i + 9; k < 20000; k++) {
-                    char curr = output.charAt(k);
-                    if (curr != '"') {
-                        result.append(curr);
-                    } else {
-                        break;
-                    }
-                }
-                break;
-            }
+        Matcher m = NAME_PATTERN.matcher(output);
+        if (m.find()) {
+            return m.group(1);
         }
-        return result.toString();
+        return null;
     }
 
     private static String callURL(String urlStr) {
         StringBuilder sb = new StringBuilder();
-        URLConnection urlConn;
-        InputStreamReader in;
+        URLConnection conn;
+        BufferedReader br = null;
+        InputStreamReader in = null;
         try {
-            URL url = new URL(urlStr);
-            urlConn = url.openConnection();
-            if (urlConn != null) {
-                urlConn.setReadTimeout(60 * 1000);
+            conn = new URL(urlStr).openConnection();
+            if (conn != null) {
+                conn.setReadTimeout(60 * 1000);
             }
-            if (urlConn != null && urlConn.getInputStream() != null) {
-                in = new InputStreamReader(urlConn.getInputStream(), StandardCharsets.UTF_8);
-                BufferedReader bufferedReader = new BufferedReader(in);
-                int cp;
-                while ((cp = bufferedReader.read()) != -1) {
-                    sb.append((char) cp);
+            if (conn != null && conn.getInputStream() != null) {
+                in = new InputStreamReader(conn.getInputStream(), "UTF-8");
+                br = new BufferedReader(in);
+                String line = br.readLine();
+                while (line != null) {
+                    sb.append(line).append("\n");
+                    line = br.readLine();
                 }
-                bufferedReader.close();
-                in.close();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (Throwable ignored) {
+                }
+            }
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (Throwable ignored) {
+                }
+            }
         }
         return sb.toString();
     }
